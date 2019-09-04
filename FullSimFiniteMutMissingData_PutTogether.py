@@ -8,6 +8,7 @@ Putting everything together
 @author: mazmysta
 """
 import sys
+import os
 import msprime
 import tsinfer
 import numpy as np
@@ -21,10 +22,11 @@ from truncate_ts_samples import truncate_ts_samples as truncate_ts_samples
 
 from Bio import SeqIO
 
+base_loc = os.path.dirname(os.path.abspath(__file__))
 ### Import HIV genome ###
-HIV_file_loc = "C:\\Users\\mazmysta\\OneDrive - Nexus365\\BDI_proj\\scripts\\PopulationsHIV\\fasta\\"
+HIV_file_loc = os.path.join(base_loc, "fasta")
 
-with open(HIV_file_loc + "HIV_CompleteGenome.txt", "r") as handle:
+with open(os.path.join(HIV_file_loc, "HIV_CompleteGenome.txt"), "r") as handle:
     for record in SeqIO.parse(handle, "fasta"):
         #print(record.id)
         #print(len(record.seq))
@@ -37,9 +39,7 @@ with open(HIV_file_loc + "HIV_CompleteGenome.txt", "r") as handle:
 
 
 ### import the trees ###
-file_loc = 'C:\\Users\\mazmysta\OneDrive - Nexus365\\BDI_proj\\HIV_Transmission_Networks_WillProbert\\19-08-08-first_example_network\\'
-
-with open(file_loc + 'pickled_data_all.pickle', 'rb') as f:
+with open(os.path.join(base_loc, 'pickled_data_all.pickle'), 'rb') as f:
     total_tree = pickle.load(f)
 
 #proof it works
@@ -383,16 +383,6 @@ for i, m in enumerate(tables.mutations):
     mutation_derived_state[i] = new_state
 
 tables.mutations.derived_state = mutation_derived_state.view(tables.mutations.derived_state.dtype)
-
-# old way
-#tables.mutations.set_columns(
-#        site = tables.mutations.site,
-#        node = tables.mutations.node,
-#        derived_state = mutation_derived_state.view(tables.mutations.derived_state.dtype),
-#        derived_state_offset = tables.mutations.derived_state_offset,
-#        parent = tables.mutations.parent,
-#        )
-
 finite_sites_ts = tables.tree_sequence()
 
 # Try printing them out
@@ -428,10 +418,10 @@ for i in range(len(haps)):
 ############# Saving things ############
 sys.exit(0) # to not overwrite files unless intentional
 #file_loc = "C:\\Users\\mazmysta\\OneDrive - Nexus365\\BDI_proj\\scripts\\PopulationsHIV\\fasta\\"
-file_loc = 'C:\\Users\\mazmysta\\OneDrive - Nexus365\\BDI_proj\\scripts\\PopulationsHIV\\simulation2\\'
+write_loc = os.path.join(base_loc, 'simulation2')
 
 ## write and save fasta file
-with open(file_loc + 'HIV_truncated_sim_fasta_file.txt', 'w') as f:
+with open(os.path.join(write_loc, 'HIV_truncated_sim_fasta_file.txt'), 'w') as f:
     for i in range(len(haps)):
         f.write(f'>{sequence_IDs[i]}\n{haps[i]}\n')
 
@@ -439,7 +429,7 @@ haps_full = []
 for i in finite_sites_ts.haplotypes():
     haps_full.append(i)
 
-with open(file_loc + 'HIV_fullsim_fasta_file.txt', 'w') as f:
+with open(os.path.join(write_loc, 'HIV_fullsim_fasta_file.txt'), 'w') as f:
     for i in range(len(haps_full)):
         f.write(f'>{sequence_IDs[i]}\n{haps_full[i]}\n')
 
@@ -459,26 +449,24 @@ with open(file_loc + 'HIV_fullsim_fasta_file.txt', 'w') as f:
 
 ### save both .trees files !! ###
 
-file_loc = 'C:\\Users\\mazmysta\\OneDrive - Nexus365\\BDI_proj\\scripts\\PopulationsHIV\\simulation2\\'
+write_loc = os.path.join(base_loc, 'simulation2')
 
-truncated_ts.dump(file_loc + 'truncated_simulation_tree.trees')
-finite_sites_ts.dump(file_loc + 'full_simulation_tree.trees')
+truncated_ts.dump(write_loc + 'truncated_simulation_tree.trees')
+finite_sites_ts.dump(write_loc + 'full_simulation_tree.trees')
 
 ######### Pickling relevant files for sim #############
 
-file_loc = 'C:\\Users\\mazmysta\\OneDrive - Nexus365\\BDI_proj\\scripts\\PopulationsHIV\\simulation2\\'
-
 #how to save
-with open(file_loc + 'pickled_pop_list.pickle', 'wb') as f:
+with open(os.path.join(write_loc, 'pickled_pop_list.pickle'), 'wb') as f:
     pickle.dump(pop_list, f)
 
-with open(file_loc + 'pickled_events_sorted.pickle', 'wb') as f:
+with open(os.path.join(write_loc, 'pickled_events_sorted.pickle'), 'wb') as f:
     pickle.dump(events_sorted, f)
 
-with open(file_loc + 'pickled_M.pickle', 'wb') as f:
+with open(os.path.join(write_loc, 'pickled_M.pickle'), 'wb') as f:
     pickle.dump(M, f)
 
-with open(file_loc + 'pickles_root_kids_list', 'wb') as f:
+with open(os.path.join(write_loc, 'pickles_root_kids_list'), 'wb') as f:
     pickle.dump(list_of_root_and_kids, f)
 
 ## loading example
@@ -496,7 +484,7 @@ ts_inferred = tsinfer.infer(sd, simplify=False)
 ts_inferred = ts_inferred.simplify(filter_sites=False, keep_unary=True)
 
 ts_inferred
-ts_inferred.dump(file_loc + 'inferred_tree.trees')
+ts_inferred.dump(os.path.join(write_loc, 'inferred_tree.trees'))
 #Out[43]: <tskit.trees.TreeSequence at 0x1ed55ca9710>
 
 X = 18
