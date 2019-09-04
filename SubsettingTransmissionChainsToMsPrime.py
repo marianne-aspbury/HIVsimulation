@@ -67,6 +67,7 @@ print(random.choice(samples_poss))
 # Extract info for given kids
 random.seed(4) 
 start = random.choice(samples_poss)
+start= '58582_0'
 #start = random.choice(samples_poss)
 print(total_tree[start].infected_others)
 current = start
@@ -213,11 +214,11 @@ for entry in range(len(pop_list)):
         
         #infection size setting
         pop_entry_bottleneck_start = msprime.PopulationParametersChange(
-                time = transfer_time, initial_size=infection_size, population = entry) #i.e. for epochs inf-> 100*entry, this is growth rate
+                time = transfer_time, initial_size=infection_size, growth_rate=0, population = entry) #i.e. for epochs inf-> 100*entry, this is growth rate
         
         #growth after infection setting - trial that 20 gens in future (less time back) gives appropriate growth for these params of pop_size = 100, rate = 0.25
         pop_entry_bottleneck_end = msprime.PopulationParametersChange(
-                time = transfer_time-20, growth_rate = 0.25, initial_size=stable_pop_size, population = entry) #i.e. for epochs inf-> 100*entry, this is growth rate
+                time = transfer_time-20, growth_rate = 0.23, initial_size=stable_pop_size, population = entry) #i.e. for epochs inf-> 100*entry, this is growth rate
 
         #save to list for manip outside loop
         Pop_bottleneck_ie_growth_list.extend((pop_entry_bottleneck_start, pop_entry_bottleneck_end))
@@ -240,7 +241,7 @@ my_history.print_history()
 
 ## plot how pop changes ##
 
-time_steps= range(0,3000,2)
+time_steps= range(1,int(np.max(gens_list))+100,2)
 # print('pop0:', my_history.population_size_trajectory(time_steps)[:,0])
 # print('pop1:', my_history.population_size_trajectory(time_steps)[:,1])
 # print('time:', np.array(time_steps))
@@ -251,22 +252,26 @@ plt.figure(1)
 #plt.plot(time_steps, my_history.population_size_trajectory(time_steps)[:,0])
 #plt.plot(time_steps, my_history.population_size_trajectory(time_steps)[:,1])
 #plt.rc('axes', prop_cycle=(cycler(color=['r', 'g', 'b', 'y'])))
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(15, 6), dpi=80)
 ax.set_prop_cycle(color=["green", "blue", "red", "orange", "grey", "cyan", "black"][1:])
 plt.plot(time_steps, my_history.population_size_trajectory(time_steps)[:,1:], '--', alpha=0.5) # this will plot each y (pop size var.) separately
 plt.xlim(np.max(time_steps),0) # switch the order of time so present (0) is RHS and past is LHS (max time step)
+#plt.xlim(np.max(time_steps),1) # switch the order of time so present (0) is RHS and past is LHS (max time step)
+#plt.ylim(np.log(0.5), np.log(150))
 #plt.axvline(x=100, color='k', linestyle='-', alpha=0.5) # add a vertical line for migration step
 #plt.legend(('1','2','3','4','5','6'),loc='best')
 #box = ax.get_position()
 #ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
 # Put a legend to the right of the current axis
+#plt.yscale("log")
+#plt.xscale("log")
 ax.legend(('1: ' + list_of_root_and_kids[0], 
            '2: ' + list_of_root_and_kids[1],
            '3: ' + list_of_root_and_kids[2],
            '4: ' + list_of_root_and_kids[3],
            '5: ' + list_of_root_and_kids[4],
            '6: ' + list_of_root_and_kids[5]),
- loc='center left', bbox_to_anchor=(1.04, 0.5))
+ loc='center left', bbox_to_anchor=(1.02, 0.5))
 plt.show()
 # time = 0 is present, larger time is past
 
