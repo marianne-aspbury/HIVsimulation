@@ -33,7 +33,7 @@ from truncate_ts_samples import truncate_ts_samples as truncate_ts_samples
 from Bio import SeqIO
 
 ### Import HIV genome ###
-HIV_file_loc = "C:\\Users\\mazmysta\\OneDrive - Nexus365\\BDI_proj\\scripts\\PopulationsHIV\\fasta\\"
+HIV_file_loc = "fasta/"
 
 with open(HIV_file_loc + "HIV_CompleteGenome.txt", "r") as handle:
     for record in SeqIO.parse(handle, "fasta"):
@@ -43,7 +43,7 @@ with open(HIV_file_loc + "HIV_CompleteGenome.txt", "r") as handle:
 
 
 ### import the trees ###
-file_loc = 'C:\\Users\\mazmysta\OneDrive - Nexus365\\BDI_proj\\HIV_Transmission_Networks_WillProbert\\19-08-08-first_example_network\\'
+file_loc = ''
 
 with open(file_loc + 'pickled_data_all.pickle', 'rb') as f:
     total_tree = pickle.load(f)
