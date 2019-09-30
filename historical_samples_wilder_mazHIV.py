@@ -43,9 +43,9 @@ with open(HIV_file_loc + "HIV_CompleteGenome.txt", "r") as handle:
 
 
 ### import the trees ###
-file_loc = ''
+file_loc = ""
 
-with open(file_loc + 'pickled_data_all.pickle', 'rb') as f:
+with open(file_loc + "pickled_data_all.pickle", "rb") as f:
     total_tree = pickle.load(f)
 
 #proof it works
@@ -298,9 +298,15 @@ def index_map(a, b, missing=-1):
 # Define ancient time, this needs to come first
 #ANCIENT_TIME = 5000/25
 
-#get modern samples and ancient samples
-modern_sample_indices = [i for i, e in enumerate(sample_list) if e.time == 0]
-ancient_sample_indices = [i for i, e in enumerate(sample_list) if e.time != 0]
+# GET modern samples and ancient samples
+ts = ts2
+sample_nodes = ts.tables.nodes.flags == 1
+
+modern_sample_indices = np.where((ts.tables.nodes.time[sample_nodes] ==0) == True)[0]
+ancient_sample_indices = np.where((ts.tables.nodes.time[sample_nodes] ==0) == False)[0]
+#modern_sample_indices = [i for i, e in enumerate(sample_list) if e.time == 0]
+#ancient_sample_indices = [i for i, e in enumerate(sample_list) if e.time != 0]
+
 
 #def simulate_ts():
 #    modern_samples = [msprime.Sample(population=0, time=0) for x in range(90)]
@@ -312,7 +318,6 @@ ancient_sample_indices = [i for i, e in enumerate(sample_list) if e.time != 0]
 #
 #ts = simulate_ts()
 
-ts = ts2
 sample_data = tsinfer.formats.SampleData.from_tree_sequence(ts)
 
 # Remove non modern samples from tree sequence
@@ -342,24 +347,24 @@ for v in ts.variants():
             genotypes=v.genotypes[ancient_sample_indices])
 ancient_samples.finalise()
 
+#%%
 # Infer and date tree from modern samples
-modern_ts = tsinfer.infer(modern_samples)
-# Ne when have populations??
-dated_modern_ts = tsdate.date(modern_ts, Ne=stable_pop_size, mutation_rate=2.5e-5)
 
-complete_samples = np.arange(len(modern_sample_indices))
-
-primary_ts = dated_modern_ts.simplify(complete_samples, filter_sites=False)
+primary_ts = ts.simplify(modern_sample_indices, filter_sites=False)
 primary_samples = tsinfer.SampleData.from_tree_sequence(primary_ts)
 
-# If you didn't constrain ancestor age by ancient samples, then use modern_samples instead of modern_samples_cp
-modern_ancestors_ts = make_ancestors_ts(modern_samples, dated_modern_ts)
+ancestors = tsinfer.generate_ancestors(primary_samples)
+ancestors_ts = tsinfer.match_ancestors(primary_samples, ancestors) # This only has inference sites
 
-# different infers
-primary_inferred_ts = primary_ts
-ancestors_ts = modern_ancestors_ts
+primary_inferred_ts = tsinfer.match_samples(primary_samples, ancestors_ts, simplify=False)
+primary_inferred_ts_simplified = primary_inferred_ts.simplify(np.where(primary_inferred_ts.tables.nodes.flags == 1)[0], keep_unary=True)
+
+tsdate.date(primary_inferred_ts_simplified, Ne=stable_pop_size, mutation_rate=2.5e-5)
+
+#%%
+# rest of inference- augmenting older samples in
+
 augment_samples = ancient_samples
-
 ## re-inserting older samples
 augment_samples = augment_samples.copy()
 
@@ -413,11 +418,13 @@ for main_site in main_samples_sites:
                 augment_samples.sites_alleles[augment_site.id] = a_m
         else:
             if augment_site.inference:
+                pass
                 # augment_site is an inference site not in the main inference.
-                logging.warning(
-                    "Variant at pos {} is marked for inference in the augment"
-                    " file but not in the inferred tree sequence".format(pos))
-                augment_samples.sites_inference[augment_site.id] = 0
+#                   I've commented the warning cos it's annoying
+#                logging.warning(
+#                    "Variant at pos {} is marked for inference in the augment"
+#                    " file but not in the inferred tree sequence".format(pos))
+#                augment_samples.sites_inference[augment_site.id] = 0
         try:
             augment_site = next(augment_samples_sites)
         except StopIteration:
@@ -562,6 +569,7 @@ tables1.sort()
 # final tree sequence with older samples too
 augmented_ts = tables1.tree_sequence()
 
+#%%
 ##### Draw some tree(s) #####
 ## Pick tree sim
 upper = 5
@@ -570,7 +578,7 @@ X = upper
 i = lower
 for tree in ts.trees():
     if i < X:
-        display(SVG(tree.draw(height=500, width = 2000,
+        display(SVG(tree.draw(height=500, width = 1500,
                               format='SVG',
                               #max_tree_height=5000
                               )))
@@ -581,5 +589,35 @@ for tree in ts.trees():
         break
     i+=1
 
+X = upper
+i = lower
+for tree in augmented_ts.trees():
+    if i < X:
+        display(SVG(tree.draw(height=1000, width = 3000,
+                              format='SVG',
+                              #max_tree_height=5000
+                              )))
+        print("Tree {} covers [{:.2f}, {:.2f}); TMRCA = {:.4f}".format(
+            tree.index, *tree.interval, tree.time(tree.roots[0])))
+#        print(tree.branch_length(46))
+    else:
+        break
+    i+=1
 
+augmented_ts_simp = augmented_ts.simplify(augmented_ts.samples(), keep_unary=False)
+
+X = upper
+i = lower
+for tree in augmented_ts_simp.trees():
+    if i < X:
+        display(SVG(tree.draw(height=1000, width = 1500,
+                              format='SVG',
+                              #max_tree_height=5000
+                              )))
+        print("Tree {} covers [{:.2f}, {:.2f}); TMRCA = {:.4f}".format(
+            tree.index, *tree.interval, tree.time(tree.roots[0])))
+#        print(tree.branch_length(46))
+    else:
+        break
+    i+=1
 ### end ###
