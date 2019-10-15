@@ -2,4 +2,4 @@
 * text=auto
 # ignore some jupyter notebook files for better code classfication stats
 *.py linguist-language=python
-*.ipynb_checkpoints linguist-vendored
+.ipynb_checkpoints/* linguist-vendored
