@@ -48,7 +48,7 @@ print('Pickle loaded, 1st root num kids: {}'.format(total_tree['-1_-1'].total_ch
 
 # Saving list of people with desired num kids beneath
 samples_poss = []
-desired_overall_children = 20 ## Seemingly my max is 30 pops with 10 samples, 100 pop size and 1000 length genome.
+desired_overall_children = 5 ## Seemingly my max is 30 pops with 10 samples, 100 pop size and 1000 length genome.
 
 for key in total_tree:
     if total_tree[key].total_children_num == desired_overall_children:
@@ -60,7 +60,7 @@ print(len(samples_poss))
 #pick only one random sample
 random.seed(4) # repeatable choice(s) - sequence same
 start = random.choice(samples_poss)
-#for 5 kids: start='58582_0'
+#start='58582_0' #for 5 kids
 print(start)
 
 print(total_tree[start].infected_others)
@@ -124,18 +124,27 @@ PopSource = msprime.PopulationConfiguration(initial_size = 1e8, growth_rate = 0)
 final_num_pops = len(list_of_root_and_kids)
 
 ## sample_sizes for each population and effective pop sizes
-sample_size = 20
+sample_size = 10
 infection_size = 1
 stable_pop_size = 100
 # ## subpops based on infected people, all subpops that want to exist at end of sim (present time) need stated here
 pop_list = [PopSource]
-
+sample_list = []
 #Setting up the end, so all pops exist and at stable pop size, no death in simulation time
 for pop in range(final_num_pops):
 #    print(pop)
     pop_list.append(
-        msprime.PopulationConfiguration(sample_size = sample_size, initial_size = stable_pop_size, growth_rate = 0)
+        msprime.PopulationConfiguration(initial_size = stable_pop_size, growth_rate = 0)
                   )
+    #historical samples rather than contemporaneous ones, 1 week after infection
+    for sample in range(sample_size):
+        if sample < sample_size//2:
+            sample_list.append(msprime.Sample(population=(pop+1),
+                                              time = gens_list[pop] - 30))
+        else:
+            sample_list.append(msprime.Sample(population=(pop+1),
+                                              time = 0))
+
 
 # no migration between sources accross time, only infection events,
     # so migration matrix is zeros
@@ -179,7 +188,7 @@ for entry in range(len(pop_list)):
         transfers_list.append(msprime.MassMigration(time = transfer_time, source = entry, dest = dest_index, proportion = 1))
 
 #check as expected
-print(transfers_list)
+#print(transfers_list)
 
 # compare
 #for i in range(len(gens_list)):
@@ -200,16 +209,20 @@ for entry in range(len(pop_list)):
 
         transfer_time = gens_list[entry-1]
 
+        # setting 0 in population before infection
+        pop_entry_null = msprime.PopulationParametersChange(
+                time = (transfer_time+0.001), initial_size=1e-8, growth_rate=0, population = entry) #i.e. for epochs inf-> 100*entry, this is growth rate
+
         #infection size setting
         pop_entry_bottleneck_start = msprime.PopulationParametersChange(
                 time = transfer_time, initial_size=infection_size, growth_rate=0, population = entry) #i.e. for epochs inf-> 100*entry, this is growth rate
 
         #growth after infection setting - trial that 20 gens in future (less time back) gives appropriate growth for these params of pop_size = 100, rate = 0.25
         pop_entry_bottleneck_end = msprime.PopulationParametersChange(
-                time = transfer_time-20, growth_rate = 0.23, initial_size=stable_pop_size, population = entry) #i.e. for epochs inf-> 100*entry, this is growth rate
+                time = transfer_time-20, growth_rate = 0.24, initial_size=stable_pop_size, population = entry) #i.e. for epochs inf-> 100*entry, this is growth rate
 
         #save to list for manip outside loop
-        Pop_bottleneck_ie_growth_list.extend((pop_entry_bottleneck_start, pop_entry_bottleneck_end))
+        Pop_bottleneck_ie_growth_list.extend((pop_entry_null, pop_entry_bottleneck_start, pop_entry_bottleneck_end))
 
 # put all events together then sort them
 events = Pop_bottleneck_ie_growth_list + transfers_list
@@ -224,7 +237,7 @@ my_history = msprime.DemographyDebugger(
     population_configurations=pop_list, migration_matrix = M,
     demographic_events = events_sorted)
 
-#my_history.print_history()
+my_history.print_history()
 
 
 
@@ -274,12 +287,15 @@ ts2 = msprime.simulate(population_configurations=pop_list, migration_matrix = M,
                        length = len(HIV_genome),
                        random_seed = 17, recombination_rate = 0.7e-4,
                        mutation_rate=2.5e-5,
-                       end_time=100000) # end time incase doesn't coalesce, occassionally there are issues
+                       samples=sample_list,
+                       end_time=500000) # end time incase doesn't coalesce, occassionally there are issues
+
+print(ts2.first().roots, ts2.first().time(ts2.first().roots[0]))
 
 
 # 5 pops, need 6 colours including fake source pop
-#colour_map = {0:"grey", 1:"blue", 2:"red", 3:"orange", 4:"green", 5:"cyan", 6:"black"}
-#node_colours = {u.id: colour_map[u.population] for u in ts2.nodes()}
+colour_map = {0:"grey", 1:"blue", 2:"red", 3:"orange", 4:"green", 5:"cyan", 6:"black"}
+node_colours = {u.id: colour_map[u.population] for u in ts2.nodes()}
 
 # draw only one tree
 
@@ -287,9 +303,12 @@ X = 1
 i = 0
 for tree in ts2.trees():
     if i < X:
-        display(SVG(tree.draw(height=800, width = 10000,
+        display(SVG(tree.draw(height=1000, width = 3000,
                               format='SVG',
-                              tree_height_scale='rank')))
+                              node_colours=node_colours,
+                              tree_height_scale='rank',
+                              #max_tree_height=5000
+                              )))
         print("Tree {} covers [{:.2f}, {:.2f}); TMRCA = {:.4f}".format(
             tree.index, *tree.interval, tree.time(tree.roots[0])))
 #        print(tree.branch_length(46))
@@ -297,7 +316,8 @@ for tree in ts2.trees():
         break
     i+=1
 
-
+# exit here for first part, but next part important too
+sys.exit(0)
 
 ########### Add finite site mutations - code from Yan Wong #############
 import tskit
@@ -383,6 +403,16 @@ for i, m in enumerate(tables.mutations):
     mutation_derived_state[i] = new_state
 
 tables.mutations.derived_state = mutation_derived_state.view(tables.mutations.derived_state.dtype)
+
+# old way
+#tables.mutations.set_columns(
+#        site = tables.mutations.site,
+#        node = tables.mutations.node,
+#        derived_state = mutation_derived_state.view(tables.mutations.derived_state.dtype),
+#        derived_state_offset = tables.mutations.derived_state_offset,
+#        parent = tables.mutations.parent,
+#        )
+
 finite_sites_ts = tables.tree_sequence()
 
 # Try printing them out
@@ -394,7 +424,7 @@ truncated_ts = truncate_ts_samples(finite_sites_ts, average_span=200, random_see
 
 #print(truncated_ts_2.genotype_matrix()) # doesn't break
 #print(truncated_ts.genotype_matrix()) # doesn't break with update
-
+#
 #for h in truncated_ts.haplotypes():
 #  print(h)
 
@@ -405,7 +435,7 @@ truncated_ts = truncate_ts_samples(finite_sites_ts, average_span=200, random_see
 haps = []
 for i in truncated_ts.haplotypes():
     haps.append(i)
-sys.exit(0) #testing missing data part
+#sys.exit(0) #testing missing data part
 
 sequence_IDs = []
 for i in range(len(haps)):
@@ -417,7 +447,7 @@ for i in range(len(haps)):
 
 ############# Saving things ############
 sys.exit(0) # to not overwrite files unless intentional
-#file_loc = "C:\\Users\\mazmysta\\OneDrive - Nexus365\\BDI_proj\\scripts\\PopulationsHIV\\fasta\\"
+
 write_loc = os.path.join(base_loc, 'simulation2')
 
 ## write and save fasta file
@@ -492,7 +522,7 @@ Y = 20
 i = 0
 for tree in ts_inferred.trees():
     if i > X and i <= Y:
-        display(SVG(tree.draw(height=600, width=4000,
+        display(SVG(tree.draw(height=800, width=2000,
                               tree_height_scale='rank')))
         print("Tree {} covers [{:.2f}, {:.2f}); TMRCA = {:.4f}".format(
             tree.index, *tree.interval, tree.time(tree.roots[0])))
