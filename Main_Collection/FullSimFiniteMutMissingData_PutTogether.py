@@ -5,7 +5,7 @@ Created on Wed Aug 21 12:33:36 2019
 Combined new simulation using missing data and finite mutation model
 Putting everything together
 
-@author: mazmysta
+@author: marianne aspbury
 """
 import sys
 import os

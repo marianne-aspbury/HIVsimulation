@@ -5,14 +5,14 @@ Created on Tue Aug 13 09:03:53 2019
 Reading in csv transmission network data and saving to Python Data Structure
 And enable manipulation of this info in python
 
-Contains successful implementation of overall children counting for each person
+Includes calculations of different properties, plus test case showing it works
 
-@author: mazmysta
+@author: marianne aspbury
 """
 
 ## some tools for later
 from IndividualClass import Individual
-import numpy as np 
+import numpy as np
 import csv
 
 '''
@@ -30,9 +30,9 @@ class Individual:
         self.direct_children_num = 0
         self.total_children_num = 0
         '''
-    
 
-## Some tests to understand functionality 
+
+## Some tests to understand functionality
 #my_dict = {}
 #print(my_dict)
 #ID_1 = 2135
@@ -56,7 +56,7 @@ class Individual:
 #print(indiv1.infected_by)
 
 
-### File locations to read in files 
+### File locations to read in files
 file_loc = 'C:\\Users\\mazmysta\OneDrive - Nexus365\\BDI_proj\\HIV_Transmission_Networks_WillProbert\\19-08-08-first_example_network\\'
 individual_metadata_file = 'phylogenetic_individualdata_all_100314_CL01_Za_B_V1.2_patchall_Rand10_Run1_PCseed0_0.csv'
 transmission_datafile = 'phylogenetic_transmission_all_100314_CL01_Za_B_V1.2_patchall_Rand10_Run1_PCseed0_0.csv'
@@ -79,7 +79,7 @@ with open(file_loc + individual_metadata_file, 'r') as f:
              my_dict[row[1]].age_death = row[5]
 #             print(row[1])
 #             print(my_dict[row[1]].__dict__)
-         
+
 #example class instance from dictionary
 print(my_dict['2369_0'].__dict__)
 
@@ -122,7 +122,7 @@ for key in my_dict:
 #    print(len(my_dict[key].infected_others))
     my_dict[key].direct_children_num = len(my_dict[key].infected_others)
 
-#%% 
+#%%
 ## find out overall child number by iteratively summing direct_children_num of infected_others and their children
 ## but need to be careful that start accumulating from the bottom of the trees upwards - visit all bottom children before any parents etc.
 ## post-order tree traversal. Not sure how to go about this, will think
@@ -130,7 +130,7 @@ for key in my_dict:
 # reset, can += 1 to add to total_children_num for each true child, reset if wrong / repeat
 for key in my_dict:
     my_dict[key].total_children_num = 0
-    
+
 # just something I was doing to find tips of tree and their direct parents but prob don't want this?
 tips_zero_children = []
 parents_of_zero_children = []
@@ -140,7 +140,7 @@ for key in my_dict:
         #print(key)
         tips_zero_children.append(key)
         parents_of_zero_children.extend(my_dict[key].infected_by)
-        
+
 #%% TEST CASE - simple tree - calculating overall children
         '''
         ---------0---------
@@ -154,7 +154,7 @@ for key in my_dict:
                  --8--  11
                  |   |
                  9   10
-Should have 3=0, 4=0, 2=2, 
+Should have 3=0, 4=0, 2=2,
             9=0, 10=0, 8=2, 11=0, 7=4, 6=0, 5=6
             1 = 10
             12 = 0
@@ -168,7 +168,7 @@ for i in range(13):
     test_dict[str(i)].ID = str(i)
     #print(str(i))
 
-zeroth = test_dict['0'] 
+zeroth = test_dict['0']
 zeroth.infected_others = ['1', '12']
 test_dict['1'].infected_others = ['2', '5']
 test_dict['2'].infected_others = ['3', '4']
@@ -232,10 +232,10 @@ for x in parents_working_list:
             if len(test_dict[y].infected_others) > 0: #i.e. has children
                 parents_working_list.append(y)
 
-  
+
 for i in range(13):
-    test_dict[str(i)].total_children_num = 0     
-         
+    test_dict[str(i)].total_children_num = 0
+
 x ='0'
 accounted_for = []
 tot_parents = []
@@ -286,12 +286,12 @@ while len(accounted_for) < len(test_dict):
 #        print('acc for', accounted_for)
 #        break
 #    i += 1
-#            
+#
 for i in range(13):
     print(i, test_dict[str(i)].total_children_num)
 
 ## this works!! :) try for true dict
-    
+
 #%% TRUE CSV TRANSMISSION NETWORK - calculating overall children
     ## For actual dict
 i = 0
@@ -310,7 +310,7 @@ for key in my_dict:
     if my_dict[key].infected_by == []:
         print(key)
 
-#1st seed         
+#1st seed
 x ='-1_-1'
 accounted_for = []
 tot_parents = []
@@ -352,7 +352,7 @@ while len(accounted_for) < len(my_dict):
         #print('tot parents', tot_parents)
         x = my_dict[x].infected_by[0]
 
-#2nd seed        
+#2nd seed
 x ='-1_2'
 accounted_for = []
 tot_parents = []
@@ -411,14 +411,14 @@ e = np.unique(b, return_counts=True)
 #print('all times, frequency of diff pops', d)
 print('frequency of diff direct kids below', '\n', 'number:', e[0], '\n', 'counts:', e[1])
 print(len(e[1]))
-    
+
 for key in my_dict:
     if my_dict[key].infected_by == []:
         print(key)
         print(my_dict[key].total_children_num)
 
 ## that did seem to work.... freq of total_child_num == 0 is same as freq direct_children_num == 0
-        
+
 '''class Individual:
     def __init__(self):
         self.ID = None
@@ -431,7 +431,7 @@ for key in my_dict:
         self.num_partners = -1
         self.direct_children_num = 0
         self.total_children_num = 0'''
-        
+
 #%%  SAVE CALCULATED CLASS STRUCTURE AND INFO
 # Pickle this custom class data to just load in in future
 import pickle
@@ -440,7 +440,7 @@ import pickle
 with open(file_loc + 'pickled_data_all.pickle', 'wb') as f:
     pickle.dump(my_dict, f)
 
-# loading example    
+# loading example
 with open(file_loc + 'pickled_data_all.pickle', 'rb') as f:
     cc = pickle.load(f)
 
@@ -456,5 +456,5 @@ for key in cc:
     else:
         break
     ct += 1
-    
+
 

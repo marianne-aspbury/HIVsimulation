@@ -7,7 +7,7 @@ Truncating simulated data and forming missing data genomes
 Updated truncated samples def so genotypes matrix works for inference steps
 23/8/2019 by Yan Wong
 
-@author: mazmysta taken from yan wong
+@author: marianne aspbury taken from yan wong
 
 """
 import msprime
@@ -20,7 +20,7 @@ def truncate_ts_samples(ts, average_span, random_seed, min_span=5):
     so that they span only a small region of the genome. The length of the
     truncated spans is given by a poisson distribution whose mean is average_span
     but which cannot go below a fixed min_span, or above the sequence_length
-    
+
     mutations above removed edges are removed so doesn't break genotypes matrix
 
     Samples are truncated by removing the edges that connect them to the rest

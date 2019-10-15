@@ -2,19 +2,19 @@
 """
 Created on Wed Aug 14 11:14:11 2019
 
-Starting point is loading in the pickled class data, then working with it 
+Starting point is loading in the pickled class data, then working with it
 to create subsetted trees: a list of trees that have e.g. 5 children underneath
 
-Then can take a random pick of a person with (e.g.) 5 people beneath, 
+Then can take a random pick of a person with (e.g.) 5 people beneath,
 create a list of all the children under that person
 And feed that into a generator of msprime input
 
-@author: mazmysta
+@author: marianne aspbury
 """
 
 import pickle
 import random # to pick from list of poss roots of subtree
-import numpy as np 
+import numpy as np
 from IndividualClass import Individual # might say unused, but not true, needed to read pickled file
 
 file_loc = 'C:\\Users\\mazmysta\OneDrive - Nexus365\\BDI_proj\\HIV_Transmission_Networks_WillProbert\\19-08-08-first_example_network\\'
@@ -34,7 +34,7 @@ for key in total_tree:
     else:
         break
     ct += 1
-    
+
 '''class Individual:
     def __init__(self):
         self.ID = None
@@ -47,7 +47,7 @@ for key in total_tree:
         self.num_partners = -1
         self.direct_children_num = 0
         self.total_children_num = 0'''
-    
+
 # Saving list of people with desired num kids beneath
 samples_poss = []
 desired_overall_children = 5
@@ -55,7 +55,7 @@ desired_overall_children = 5
 for key in total_tree:
     if total_tree[key].total_children_num == desired_overall_children:
         samples_poss.append(key)
-        
+
 print(len(samples_poss))
 # 1222, correct for kids = 5
 
@@ -65,7 +65,7 @@ print(random.choice(samples_poss))
 print(random.choice(samples_poss))
 
 # Extract info for given kids
-random.seed(4) 
+random.seed(4)
 start = random.choice(samples_poss)
 start= '58582_0'
 #start = random.choice(samples_poss)
@@ -88,17 +88,17 @@ print(list_of_kids)
 list_of_root_and_kids = [start] + list_of_kids
 
 # all info required for mini-transmission chain
-for item in list_of_root_and_kids: 
-    print(item, total_tree[item].infected_others, 
-          total_tree[item].time_infected_others, 
-          total_tree[item].age_birth, 
+for item in list_of_root_and_kids:
+    print(item, total_tree[item].infected_others,
+          total_tree[item].time_infected_others,
+          total_tree[item].age_birth,
           total_tree[item].age_death)
 
 # know how to build subtree since 'root' = start
 
-## need to somehow convert this to msprime format  
-    
-## First use times of infection to convert the values to generations: 
+## need to somehow convert this to msprime format
+
+## First use times of infection to convert the values to generations:
 # 1 gen per day so years*365 gens
 
 # Find total num of generations (days) to model over
@@ -117,9 +117,9 @@ for item in list_of_root_and_kids:
     #float to take as number not string, and access list element with [0]
     diff_calc = 365*(max(times_loop)-float(total_tree[item].time_infected_by[0]))
     gens_list.append(diff_calc + 100) # add 100 so most recent infection is '100 gens (days) in past'
-    
+
 #    print(float(total_tree[item].time_infected_by[0]))
- 
+
 # info on dates so far
 for i in range(len(gens_list)):
     print((list_of_root_and_kids)[i],
@@ -148,7 +148,7 @@ for pop in range(final_num_pops):
     pop_list.append(
         msprime.PopulationConfiguration(sample_size = sample_size, initial_size = stable_pop_size, growth_rate = 0)
                   )
-    
+
 # no migration between sources accross time, only infection events,
     # so migration matrix is zeros
 M = np.zeros((final_num_pops+1,final_num_pops+1))
@@ -156,12 +156,12 @@ M = np.zeros((final_num_pops+1,final_num_pops+1))
 # Now get transmission events from the data. Use index as population number, but +1 since have fake source pop at index 0.
 for i in list_of_root_and_kids:
     print(list_of_root_and_kids.index(i) + 1)
-    
+
 ####--- new version with sub-pops ---####
 
 ## a simple model where independent sub-pop is infection derived from source pop
 # if infected by true pop, need to state when diverged from past pop if that's the case
-# Oddly source is the destination, i.e. direction of migration is dest -> source if forwards in time view. 
+# Oddly source is the destination, i.e. direction of migration is dest -> source if forwards in time view.
 # backwards in time means that destination is destination (but it's where the migration has come from)
 
 transfers_list = []
@@ -169,15 +169,15 @@ for entry in range(len(pop_list)):
     print(entry)
     if entry == 0: # ignore 0 since this is the source pop
         pass
-    
+
     elif entry == 1: # 1 is root so needs own bit
         entry_ID = list_of_root_and_kids[entry-1]
         print(entry, entry_ID)
         dest_index = 0 #infected from source
         transfer_time = gens_list[entry-1] # time infected still stored.
         print(transfer_time)
-        transfers_list.append(msprime.MassMigration(time = transfer_time, source = entry, dest = dest_index, proportion = 1)) 
-    
+        transfers_list.append(msprime.MassMigration(time = transfer_time, source = entry, dest = dest_index, proportion = 1))
+
     elif entry > 1: # 1 is root so needs own bit
         # get the index of the infected_by population
         # index of current population is its index in pop_list (index in list_of_root... + 1)
@@ -202,20 +202,20 @@ for i in range(len(gens_list)):
 ## now have set of populations, the transfers for pops (infection events)
     # still need the bottlenecks (pop growth & stabilisation)
     # then can order(sort) the complete demography list by time and simulate
-    
+
 ## Bottlenecks: add population growth in so infections from source pop are only ~ 1-5 virions, which then balloons to e.g. ~1000
 
 #### Bottleneck list initiation and creation
 Pop_bottleneck_ie_growth_list = []
 for entry in range(len(pop_list)):
     if entry > 0: # ignore 0 since this is the source pop. Only need infection time for this so root doesn't need own case
-        
+
         transfer_time = gens_list[entry-1]
-        
+
         #infection size setting
         pop_entry_bottleneck_start = msprime.PopulationParametersChange(
                 time = transfer_time, initial_size=infection_size, growth_rate=0, population = entry) #i.e. for epochs inf-> 100*entry, this is growth rate
-        
+
         #growth after infection setting - trial that 20 gens in future (less time back) gives appropriate growth for these params of pop_size = 100, rate = 0.25
         pop_entry_bottleneck_end = msprime.PopulationParametersChange(
                 time = transfer_time-20, growth_rate = 0.23, initial_size=stable_pop_size, population = entry) #i.e. for epochs inf-> 100*entry, this is growth rate
@@ -265,7 +265,7 @@ plt.xlim(np.max(time_steps),0) # switch the order of time so present (0) is RHS 
 # Put a legend to the right of the current axis
 #plt.yscale("log")
 #plt.xscale("log")
-ax.legend(('1: ' + list_of_root_and_kids[0], 
+ax.legend(('1: ' + list_of_root_and_kids[0],
            '2: ' + list_of_root_and_kids[1],
            '3: ' + list_of_root_and_kids[2],
            '4: ' + list_of_root_and_kids[3],
@@ -345,16 +345,16 @@ print('colour key:', colour_map)
 for entry in range(len(pop_list)):
     if entry == 0: # ignore 0 since this is the source pop
         print(entry, 'fake source pop')
-    
-    elif entry == 1: 
+
+    elif entry == 1:
         entry_ID = list_of_root_and_kids[entry-1]
-        print(entry, entry_ID, 'infected by', 
+        print(entry, entry_ID, 'infected by',
               'fake source pop',
               '0')
-        
-    elif entry > 1: 
+
+    elif entry > 1:
         entry_ID = list_of_root_and_kids[entry-1]
-        print(entry, entry_ID, 'infected by', 
+        print(entry, entry_ID, 'infected by',
               total_tree[entry_ID].infected_by[0],
               list_of_root_and_kids.index(total_tree[entry_ID].infected_by[0])+1)
-        
+

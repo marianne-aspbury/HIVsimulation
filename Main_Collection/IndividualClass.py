@@ -4,7 +4,7 @@ Created on Thu Aug 15 13:08:31 2019
 
 Just the class of individual
 
-@author: mazmysta
+@author: marianne aspbury
 """
 
 # Using this class to store information on individuals
