@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# ignore some jupyter notebook files for better code classfication stats
+*.py linguist-language=python
+*.ipynb_checkpoints linguist-vendored
