@@ -3,3 +3,4 @@
 # ignore some jupyter notebook files for better code classfication stats
 *.py linguist-language=python
 .ipynb_checkpoints/* linguist-vendored
+Older_progress/*.ipynb linguist-documentation
